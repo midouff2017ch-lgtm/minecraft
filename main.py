@@ -1,8 +1,7 @@
 import os
 import time
 import threading
-import aiohttp
-import asyncio
+import requests
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -58,20 +57,16 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- Keep-Alive Ping دوري ---
+# --- Keep-Alive Ping دوري (متزامن) ---
 def run_keep_alive():
-    async def task():
-        async with aiohttp.ClientSession() as session:
-            while True:
-                try:
-                    url = "https://check-ban-e7pa.onrender.com"
-                    async with session.get(url) as response:
-                        print(f"💡 Keep-Alive ping status: {response.status}")
-                except Exception as e:
-                    print(f"⚠️ Keep-Alive error: {e}")
-                await asyncio.sleep(60)  # كل دقيقة
-
-    asyncio.run(task())
+    while True:
+        try:
+            url = "https://minecraft-1858.onrender.com"
+            response = requests.get(url)
+            print(f"💡 Keep-Alive ping status: {response.status_code}")
+        except Exception as e:
+            print(f"⚠️ Keep-Alive error: {e}")
+        time.sleep(60)  # كل دقيقة
 
 # --- Main ---
 if __name__ == "__main__":
