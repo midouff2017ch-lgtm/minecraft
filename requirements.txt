@@ -1,4 +1,4 @@
 Flask
-requests
 git+https://github.com/ammaraskar/pyCraft.git
+
 
