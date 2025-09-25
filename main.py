@@ -1,7 +1,7 @@
 import os
 import time
 import threading
-import requests
+import random
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -20,7 +20,7 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXCHEAT"
+MC_USERNAME = "MIDOUXCHEAT"  # اسم البوت
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
@@ -29,19 +29,23 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:
+    while True:  
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
+
+            # Events
             connection.register_packet_listener(on_join, clientbound.play.JoinGamePacket)
             connection.register_packet_listener(on_disconnect, clientbound.login.DisconnectPacket)
             connection.register_packet_listener(on_disconnect, clientbound.play.DisconnectPacket)
+
             connection.connect()
 
             tick = 0
-            while connection.connected:
+            while connection.connected:  # ✅ هنا بدل running
+                # نحرك البوت حركة بسيطة
                 pkt = serverbound.play.ClientStatusPacket()
-                pkt.action_id = 0  # keep-alive ping للبوت
+                pkt.action_id = 0  # keep-alive ping
                 connection.write_packet(pkt)
 
                 tick += 1
@@ -57,26 +61,8 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- Keep-Alive Ping دوري (متزامن) ---
-def run_keep_alive():
-    while True:
-        try:
-            url = "https://check-ban-e7pa.onrender.com"
-            response = requests.get(url)
-            print(f"💡 Keep-Alive ping status: {response.status_code}")
-        except Exception as e:
-            print(f"⚠️ Keep-Alive error: {e}")
-        time.sleep(60)  # كل دقيقة
-
-# --- Main ---
+# --- Start Everything ---
 if __name__ == "__main__":
-    # تشغيل Flask في Thread منفصل
-    threading.Thread(target=run_flask, daemon=True).start()
-    print("🚀 Flask server started in background")
-
-    # تشغيل Keep-Alive ping في Thread منفصل
-    threading.Thread(target=run_keep_alive, daemon=True).start()
-    print("💡 Keep-Alive task started in background")
-
-    # تشغيل بوت الماينكرافت في Thread الرئيسي
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
     run_mc_bot()
