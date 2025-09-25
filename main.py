@@ -63,7 +63,7 @@ async def keep_alive_task():
     async with aiohttp.ClientSession() as session:
         while True:
             try:
-                url = "https://minecraft-1555.onrender.com"
+                url = "https://check-ban-e7pa.onrender.com"
                 async with session.get(url) as response:
                     print(f"💡 Keep-Alive ping status: {response.status}")
             except Exception as e:
