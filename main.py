@@ -2,8 +2,9 @@ import os
 import time
 import threading
 from flask import Flask
-from pycraft.minecraft.networking.connection import Connection
-from pycraft.minecraft.networking.packets import serverbound, clientbound
+from minecraft.networking.connection import Connection
+from minecraft.networking.packets import serverbound, clientbound
+
 
 # --- Flask Keep-Alive ---
 app = Flask(__name__)
@@ -55,4 +56,5 @@ if __name__ == "__main__":
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     run_mc_bot()
+
 
