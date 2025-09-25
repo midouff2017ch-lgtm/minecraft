@@ -1,8 +1,7 @@
 import os
 import time
 import threading
-import asyncio
-import aiohttp
+import random
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -43,7 +42,8 @@ def run_mc_bot():
             connection.connect()
 
             tick = 0
-            while connection.connected:
+            while connection.connected:  # ✅ هنا بدل running
+                # نحرك البوت حركة بسيطة
                 pkt = serverbound.play.ClientStatusPacket()
                 pkt.action_id = 0  # keep-alive ping
                 connection.write_packet(pkt)
@@ -61,32 +61,8 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- Keep-Alive with aiohttp ---
-async def keep_alive():
-    async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                url = "https://minecraft-y7w0.onrender.com"
-                async with session.get(url) as response:
-                    print(f"💡 Keep-Alive ping status: {response.status}")
-            except Exception as e:
-                print(f"⚠️ Keep-Alive error: {e}")
-            await asyncio.sleep(60)  # كل دقيقة
-
-def start_keep_alive():
-    asyncio.run(keep_alive())
-
 # --- Start Everything ---
 if __name__ == "__main__":
-    # Flask Thread
-    threading.Thread(target=run_flask, daemon=True).start()
-
-    # Keep-Alive Thread
-    threading.Thread(target=start_keep_alive, daemon=True).start()
-
-    # Minecraft Bot Thread
-    threading.Thread(target=run_mc_bot, daemon=True).start()
-
-    # خلي البرنامج شغال دايمًا
-    while True:
-        time.sleep(60)
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    run_mc_bot()
