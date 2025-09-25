@@ -1,16 +1,17 @@
 import os
 import time
 import threading
+import random
 from flask import Flask
 from minecraft.networking.connection import Connection
-from minecraft.networking.packets import serverbound, clientbound
+from minecraft.networking.packets import clientbound, serverbound
 
 # --- Flask Keep-Alive ---
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ MC Bot is running and keeping Aternos awake!"
+    return "✅ MC Bot MIDOUXCHEAT is running and keeping Aternos awake!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -18,8 +19,8 @@ def run_flask():
 
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
-MC_PORT = 26755   # تأكد أنه نفس البورت الموجود حاليا في Aternos
-MC_USERNAME = "KeepAliveBot"  # اسم البوت (مستعار)
+MC_PORT = 26755
+MC_USERNAME = "MIDOUXCHEAT"
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
@@ -28,7 +29,7 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:  # يحاول يعيد الاتصال إذا طُرد
+    while True:
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -40,19 +41,25 @@ def run_mc_bot():
 
             connection.connect()
 
-            tick = 0
+            x, y, z = 0.0, 64.0, 0.0  # موقع افتراضي
             while True:
-                pkt = serverbound.play.PlayerPositionAndLookPacket()
-                pkt.x, pkt.y, pkt.z = 0.0, 64.0, 0.0
-                pkt.yaw, pkt.pitch = 0.0, 0.0
-                pkt.on_ground = True
-                connection.write_packet(pkt)
+                # كل 30 ثانية رسالة أن البوت شغال
+                print("Bot still alive...")
 
-                tick += 1
-                if tick % 10 == 0:
-                    print(f"Bot still alive... {tick*30} seconds")
+                # كل دقيقة يتحرك خطوة صغيرة يمين/يسار
+                dx = random.choice([-0.5, 0.5])
+                dz = random.choice([-0.5, 0.5])
+                x += dx
+                z += dz
 
-                time.sleep(30)
+                move = serverbound.play.PlayerPositionPacket()
+                move.x, move.y, move.z = x, y, z
+                move.on_ground = True
+                connection.write_packet(move)
+
+                print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
+
+                time.sleep(60)
 
         except Exception as e:
             print("⚠️ Error, retrying in 10s:", e)
