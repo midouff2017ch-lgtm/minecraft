@@ -30,7 +30,7 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:
+    while True:  
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -45,7 +45,7 @@ def run_mc_bot():
             tick = 0
             while connection.connected:
                 pkt = serverbound.play.ClientStatusPacket()
-                pkt.action_id = 0
+                pkt.action_id = 0  # keep-alive ping
                 connection.write_packet(pkt)
 
                 tick += 1
@@ -61,28 +61,32 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- Async Keep-Alive Ping ---
+# --- Keep-Alive with aiohttp ---
 async def keep_alive():
     async with aiohttp.ClientSession() as session:
         while True:
             try:
-                url = "https://check-ban-e7pa.onrender.com"
+                url = "https://minecraft-y7w0.onrender.com"
                 async with session.get(url) as response:
                     print(f"💡 Keep-Alive ping status: {response.status}")
             except Exception as e:
                 print(f"⚠️ Keep-Alive error: {e}")
-            await asyncio.sleep(60)
+            await asyncio.sleep(60)  # كل دقيقة
 
 def start_keep_alive():
     asyncio.run(keep_alive())
 
 # --- Start Everything ---
 if __name__ == "__main__":
-    # Flask في Thread
+    # Flask Thread
     threading.Thread(target=run_flask, daemon=True).start()
 
-    # Keep-Alive في Thread منفصل
+    # Keep-Alive Thread
     threading.Thread(target=start_keep_alive, daemon=True).start()
 
-    # Minecraft Bot في Main
-    run_mc_bot()
+    # Minecraft Bot Thread
+    threading.Thread(target=run_mc_bot, daemon=True).start()
+
+    # خلي البرنامج شغال دايمًا
+    while True:
+        time.sleep(60)
