@@ -2,6 +2,8 @@ import os
 import time
 import threading
 import random
+import asyncio
+import aiohttp
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -29,7 +31,7 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:  
+    while True:
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -42,8 +44,7 @@ def run_mc_bot():
             connection.connect()
 
             tick = 0
-            while connection.connected:  # ✅ هنا بدل running
-                # نحرك البوت حركة بسيطة
+            while connection.connected:  # ✅
                 pkt = serverbound.play.ClientStatusPacket()
                 pkt.action_id = 0  # keep-alive ping
                 connection.write_packet(pkt)
@@ -61,8 +62,30 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
+# --- External Keep-Alive Ping (aiohttp) ---
+async def keep_alive():
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                url = "https://minecraft-y7w0.onrender.com"
+                async with session.get(url) as response:
+                    print(f"💡 Keep-Alive ping status: {response.status}")
+            except Exception as e:
+                print(f"⚠️ Keep-Alive error: {e}")
+            await asyncio.sleep(60)  # كل دقيقة
+
+def run_keep_alive():
+    asyncio.run(keep_alive())
+
 # --- Start Everything ---
 if __name__ == "__main__":
+    # Flask
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
+
+    # Keep-Alive Ping
+    keepalive_thread = threading.Thread(target=run_keep_alive, daemon=True)
+    keepalive_thread.start()
+
+    # Minecraft Bot
     run_mc_bot()
