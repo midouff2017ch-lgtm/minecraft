@@ -1,7 +1,6 @@
 import os
 import time
 import threading
-import random
 import asyncio
 import aiohttp
 from flask import Flask
@@ -31,7 +30,7 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:  
+    while True:
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -44,10 +43,9 @@ def run_mc_bot():
             connection.connect()
 
             tick = 0
-            while connection.connected:  # ✅ هنا بدل running
-                # نحرك البوت حركة بسيطة
+            while connection.connected:
                 pkt = serverbound.play.ClientStatusPacket()
-                pkt.action_id = 0  # keep-alive ping
+                pkt.action_id = 0
                 connection.write_packet(pkt)
 
                 tick += 1
@@ -68,24 +66,23 @@ async def keep_alive():
     async with aiohttp.ClientSession() as session:
         while True:
             try:
-                url = "https://check-ban-e7pa.onrender.com"  # رابط البينغ
+                url = "https://check-ban-e7pa.onrender.com"
                 async with session.get(url) as response:
                     print(f"💡 Keep-Alive ping status: {response.status}")
             except Exception as e:
                 print(f"⚠️ Keep-Alive error: {e}")
-            await asyncio.sleep(60)  # كل دقيقة
+            await asyncio.sleep(60)
+
+def start_keep_alive():
+    asyncio.run(keep_alive())
 
 # --- Start Everything ---
 if __name__ == "__main__":
     # Flask في Thread
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+    threading.Thread(target=run_flask, daemon=True).start()
 
-    # Keep-Alive في Thread
-    keep_alive_thread = threading.Thread(
-        target=lambda: asyncio.run(keep_alive()), daemon=True
-    )
-    keep_alive_thread.start()
+    # Keep-Alive في Thread منفصل
+    threading.Thread(target=start_keep_alive, daemon=True).start()
 
-    # Minecraft Bot
+    # Minecraft Bot في Main
     run_mc_bot()
