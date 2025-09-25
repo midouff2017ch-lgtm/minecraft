@@ -1,2 +1,4 @@
 Flask
+aiohttp
 git+https://github.com/ammaraskar/pyCraft.git
+
