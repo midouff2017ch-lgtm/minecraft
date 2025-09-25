@@ -2,7 +2,7 @@ import os
 import time
 import threading
 from flask import Flask
-from minecraft.networking.connection import Connection, LoginInfo
+from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
 
 # --- Flask Keep-Alive ---
@@ -20,7 +20,7 @@ def run_flask():
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
 MC_USERNAME = "KeepAliveBot"
-MC_VERSION = 754  # بروتوكول 1.16.5
+MC_PROTOCOL = 754  # بروتوكول 1.16.5
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
@@ -29,9 +29,9 @@ def run_mc_bot():
     while True:
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
-            
-            login_info = LoginInfo(username=MC_USERNAME)
-            connection = Connection(MC_HOST, MC_PORT, login_info=login_info, allowed_versions=[MC_VERSION])
+
+            # هنا بدون LoginInfo
+            connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME, allowed_versions=[MC_PROTOCOL])
 
             connection.register_packet_listener(on_join, clientbound.play.JoinGamePacket)
             connection.connect()
