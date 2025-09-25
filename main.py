@@ -61,7 +61,7 @@ def run_mc_bot():
 def run_keep_alive():
     while True:
         try:
-            url = "https://minecraft-1858.onrender.com"
+            url = "https://check-ban-e7pa.onrender.com"
             response = requests.get(url)
             print(f"💡 Keep-Alive ping status: {response.status_code}")
         except Exception as e:
