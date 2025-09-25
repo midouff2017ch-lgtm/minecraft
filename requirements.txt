@@ -1,2 +1,4 @@
 Flask
-pyCraft
+git+https://github.com/ammaraskar/pyCraft.git
+
+
