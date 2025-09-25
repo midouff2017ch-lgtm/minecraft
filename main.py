@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import random
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -20,7 +21,7 @@ def run_flask():
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
 MC_USERNAME = "KeepAliveBot"
-MC_PROTOCOL = 754  # بروتوكول 1.16.5
+MC_PROTOCOL = 754  # 1.16.5
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
@@ -30,21 +31,34 @@ def run_mc_bot():
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
 
-            # هنا بدون LoginInfo
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME, allowed_versions=[MC_PROTOCOL])
-
             connection.register_packet_listener(on_join, clientbound.play.JoinGamePacket)
             connection.connect()
 
+            # إحداثيات البداية
+            x, y, z = 0.0, 64.0, 0.0
             tick = 0
+
             while True:
                 pkt = serverbound.play.PlayerPositionAndLookPacket()
-                pkt.x, pkt.y, pkt.z = 0.0, 64.0, 0.0
+                pkt.x, pkt.y, pkt.z = x, y, z
                 pkt.yaw, pkt.pitch = 0.0, 0.0
                 pkt.on_ground = True
                 connection.write_packet(pkt)
 
                 tick += 1
+                if tick % 2 == 0:  # كل دقيقة يغير مكانه
+                    move = random.choice(["forward", "backward", "left", "right"])
+                    if move == "forward":
+                        z += 1.0
+                    elif move == "backward":
+                        z -= 1.0
+                    elif move == "left":
+                        x -= 1.0
+                    elif move == "right":
+                        x += 1.0
+                    print(f"[Movement] Bot moved {move} to ({x}, {y}, {z})")
+
                 if tick % 10 == 0:
                     print(f"Bot still alive... {tick*30} seconds")
 
