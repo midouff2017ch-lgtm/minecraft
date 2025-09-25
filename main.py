@@ -31,7 +31,7 @@ def on_disconnect(packet):
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
 
 def run_mc_bot():
-    while True:
+    while True:  
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -44,7 +44,8 @@ def run_mc_bot():
             connection.connect()
 
             tick = 0
-            while connection.connected:  # ✅
+            while connection.connected:  # ✅ هنا بدل running
+                # نحرك البوت حركة بسيطة
                 pkt = serverbound.play.ClientStatusPacket()
                 pkt.action_id = 0  # keep-alive ping
                 connection.write_packet(pkt)
@@ -62,30 +63,29 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- External Keep-Alive Ping (aiohttp) ---
+# --- Async Keep-Alive Ping ---
 async def keep_alive():
     async with aiohttp.ClientSession() as session:
         while True:
             try:
-                url = "https://minecraft-y7w0.onrender.com"
+                url = "https://check-ban-e7pa.onrender.com"  # رابط البينغ
                 async with session.get(url) as response:
                     print(f"💡 Keep-Alive ping status: {response.status}")
             except Exception as e:
                 print(f"⚠️ Keep-Alive error: {e}")
             await asyncio.sleep(60)  # كل دقيقة
 
-def run_keep_alive():
-    asyncio.run(keep_alive())
-
 # --- Start Everything ---
 if __name__ == "__main__":
-    # Flask
+    # Flask في Thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    # Keep-Alive Ping
-    keepalive_thread = threading.Thread(target=run_keep_alive, daemon=True)
-    keepalive_thread.start()
+    # Keep-Alive في Thread
+    keep_alive_thread = threading.Thread(
+        target=lambda: asyncio.run(keep_alive()), daemon=True
+    )
+    keep_alive_thread.start()
 
     # Minecraft Bot
     run_mc_bot()
