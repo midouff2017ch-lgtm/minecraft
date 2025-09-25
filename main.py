@@ -20,23 +20,16 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXCHEAT"  # اسم البوت الجديد
-
-# نخلي فلاغ (علامة) يعرف إذا انطرد
-should_reconnect = False
+MC_USERNAME = "MIDOUXCHEAT"  # اسم البوت
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
 
 def on_disconnect(packet):
-    global should_reconnect
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
-    should_reconnect = True   # لو السيرفر طرد البوت → يطلب إعادة الاتصال
 
 def run_mc_bot():
-    global should_reconnect
-    while True:
-        should_reconnect = False
+    while True:  
         try:
             print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
@@ -48,32 +41,25 @@ def run_mc_bot():
 
             connection.connect()
 
-            x, y, z = 0.0, 64.0, 0.0
-            while connection.running:
-                # حركة بسيطة كل 60 ثانية
-                dx = random.choice([-0.5, 0.5])
-                dz = random.choice([-0.5, 0.5])
-                x += dx
-                z += dz
+            tick = 0
+            while connection.connected:  # ✅ هنا بدل running
+                # نحرك البوت حركة بسيطة
+                pkt = serverbound.play.ClientStatusPacket()
+                pkt.action_id = 0  # keep-alive ping
+                connection.write_packet(pkt)
 
-                move = serverbound.play.PlayerPositionPacket()
-                move.x, move.y, move.z = x, y, z
-                move.on_ground = True
-                connection.write_packet(move)
+                tick += 1
+                if tick % 10 == 0:
+                    print(f"Bot still alive... {tick*30} seconds")
 
-                print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
-                time.sleep(60)
+                time.sleep(30)
+
+            print("⚠️ Lost connection, retrying in 10s...")
+            time.sleep(10)
 
         except Exception as e:
-            print("⚠️ Error in bot:", e)
-
-        # هنا فقط نعيد الدخول إذا السيرفر طرد البوت
-        if should_reconnect:
-            print("🔄 Reconnecting in 10 seconds...")
+            print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
-        else:
-            print("🛑 Bot stopped (no reconnect).")
-            break
 
 # --- Start Everything ---
 if __name__ == "__main__":
