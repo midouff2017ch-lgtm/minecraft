@@ -1,8 +1,8 @@
 import os
 import time
 import threading
-import asyncio
 import aiohttp
+import asyncio
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
@@ -42,7 +42,7 @@ def run_mc_bot():
             tick = 0
             while connection.connected:
                 pkt = serverbound.play.ClientStatusPacket()
-                pkt.action_id = 0
+                pkt.action_id = 0  # keep-alive ping للبوت
                 connection.write_packet(pkt)
 
                 tick += 1
@@ -58,29 +58,30 @@ def run_mc_bot():
             print("⚠️ Error in bot, retrying in 10s:", e)
             time.sleep(10)
 
-# --- Async Keep-Alive Ping ---
-async def keep_alive_task():
-    async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                url = "https://minecraft-1858.onrender.com/"
-                async with session.get(url) as response:
-                    print(f"💡 Keep-Alive ping status: {response.status}")
-            except Exception as e:
-                print(f"⚠️ Keep-Alive error: {e}")
-            await asyncio.sleep(60)  # كل دقيقة
+# --- Keep-Alive Ping دوري ---
+def run_keep_alive():
+    async def task():
+        async with aiohttp.ClientSession() as session:
+            while True:
+                try:
+                    url = "https://check-ban-e7pa.onrender.com"
+                    async with session.get(url) as response:
+                        print(f"💡 Keep-Alive ping status: {response.status}")
+                except Exception as e:
+                    print(f"⚠️ Keep-Alive error: {e}")
+                await asyncio.sleep(60)  # كل دقيقة
+
+    asyncio.run(task())
 
 # --- Main ---
 if __name__ == "__main__":
     # تشغيل Flask في Thread منفصل
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+    threading.Thread(target=run_flask, daemon=True).start()
     print("🚀 Flask server started in background")
 
-    # بدء حلقة asyncio للـ Keep-Alive
-    loop = asyncio.get_event_loop()
-    loop.create_task(keep_alive_task())
+    # تشغيل Keep-Alive ping في Thread منفصل
+    threading.Thread(target=run_keep_alive, daemon=True).start()
+    print("💡 Keep-Alive task started in background")
 
-    # تشغيل بوت الماينكرافت (الوظيفة الرئيسية) في نفس Thread الرئيسي
+    # تشغيل بوت الماينكرافت في Thread الرئيسي
     run_mc_bot()
-
