@@ -5,13 +5,14 @@ import random
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
+from minecraft.exceptions import LoginDisconnect
 
 # --- Flask Keep-Alive ---
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ MC Bot is running and keeping Aternos awake!"
+    return "✅ MC Bot is running and keeping alive!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -20,7 +21,7 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXCHEAT"
+MC_USERNAME = "MIDOUXCHEAT_NEW"  # <-- هنا الاسم الجديد
 
 should_reconnect = False
 
@@ -48,9 +49,8 @@ def run_mc_bot():
             connection.connect()
 
             x, y, z = 0.0, 64.0, 0.0
-
             while connection.connected:
-                # حركة بسيطة كل 15 ثانية
+                # حركة عشوائية بسيطة كل 60 ثانية
                 dx = random.choice([-0.5, 0.5])
                 dz = random.choice([-0.5, 0.5])
                 x += dx
@@ -61,25 +61,26 @@ def run_mc_bot():
                 move.on_ground = True
                 connection.write_packet(move)
 
-                # KeepAlive ping
-                keep_alive = serverbound.play.ClientStatusPacket()
-                keep_alive.action_id = 0
-                connection.write_packet(keep_alive)
-
                 print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
-                time.sleep(15)
+                time.sleep(60)
 
-        except (ConnectionResetError, EOFError, OSError) as e:
-            print(f"⚠️ Connection lost: {e}. Reconnecting in 10s...")
+        except (ConnectionResetError, EOFError) as e:
+            print("⚠️ Connection error, retrying in 10s:", e)
             should_reconnect = True
+
+        except LoginDisconnect as e:
+            print("❌ Login rejected by server:", e)
+            should_reconnect = False
 
         except Exception as e:
             print("⚠️ Unexpected error:", e)
             should_reconnect = True
 
         if should_reconnect:
+            print("🔄 Reconnecting in 10 seconds...")
             time.sleep(10)
         else:
+            print("🛑 Bot stopped (no reconnect).")
             break
 
 # --- Start Everything in Threads ---
