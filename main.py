@@ -20,9 +20,8 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXCHEAT"  # اسم البوت الجديد
+MC_USERNAME = "MIDOUXCHEAT"
 
-# نخلي فلاغ (علامة) يعرف إذا انطرد
 should_reconnect = False
 
 def on_join(packet):
@@ -31,7 +30,7 @@ def on_join(packet):
 def on_disconnect(packet):
     global should_reconnect
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
-    should_reconnect = True   # لو السيرفر طرد البوت → يطلب إعادة الاتصال
+    should_reconnect = True
 
 def run_mc_bot():
     global should_reconnect
@@ -49,7 +48,7 @@ def run_mc_bot():
             connection.connect()
 
             x, y, z = 0.0, 64.0, 0.0
-            while connection.running:
+            while connection.connected:  # ✅ هنا بدل running
                 # حركة بسيطة كل 60 ثانية
                 dx = random.choice([-0.5, 0.5])
                 dz = random.choice([-0.5, 0.5])
@@ -67,7 +66,6 @@ def run_mc_bot():
         except Exception as e:
             print("⚠️ Error in bot:", e)
 
-        # هنا فقط نعيد الدخول إذا السيرفر طرد البوت
         if should_reconnect:
             print("🔄 Reconnecting in 10 seconds...")
             time.sleep(10)
@@ -75,8 +73,14 @@ def run_mc_bot():
             print("🛑 Bot stopped (no reconnect).")
             break
 
-# --- Start Everything ---
+# --- Start Everything in Threads ---
 if __name__ == "__main__":
     flask_thread = threading.Thread(target=run_flask, daemon=True)
+    bot_thread = threading.Thread(target=run_mc_bot, daemon=True)
+
     flask_thread.start()
-    run_mc_bot()
+    bot_thread.start()
+
+    # Keep main thread alive
+    while True:
+        time.sleep(60)
