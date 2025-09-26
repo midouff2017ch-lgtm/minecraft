@@ -69,19 +69,17 @@ def run_mc_bot():
                 print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
                 time.sleep(15)
 
-        except (ConnectionResetError, EOFError) as e:
-            print(f"❌ Connection lost: {e}. Reconnecting...")
+        except (ConnectionResetError, EOFError, OSError) as e:
+            print(f"⚠️ Connection lost: {e}. Reconnecting in 10s...")
             should_reconnect = True
 
         except Exception as e:
-            print("⚠️ Error in bot:", e)
+            print("⚠️ Unexpected error:", e)
             should_reconnect = True
 
         if should_reconnect:
-            print("🔄 Reconnecting in 10 seconds...")
             time.sleep(10)
         else:
-            print("🛑 Bot stopped (no reconnect).")
             break
 
 # --- Start Everything in Threads ---
