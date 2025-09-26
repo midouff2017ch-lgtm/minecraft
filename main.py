@@ -5,6 +5,7 @@ import random
 from flask import Flask
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import serverbound, clientbound
+from socket import error as SocketError
 
 # --- Flask Keep-Alive ---
 app = Flask(__name__)
@@ -48,20 +49,26 @@ def run_mc_bot():
             connection.connect()
 
             x, y, z = 0.0, 64.0, 0.0
-            while connection.connected:  # ✅ هنا بدل running
-                # حركة بسيطة كل 60 ثانية
-                dx = random.choice([-0.5, 0.5])
-                dz = random.choice([-0.5, 0.5])
-                x += dx
-                z += dz
+            while connection.connected:
+                try:
+                    # حركة بسيطة كل 60 ثانية
+                    dx = random.choice([-0.5, 0.5])
+                    dz = random.choice([-0.5, 0.5])
+                    x += dx
+                    z += dz
 
-                move = serverbound.play.PlayerPositionPacket()
-                move.x, move.y, move.z = x, y, z
-                move.on_ground = True
-                connection.write_packet(move)
+                    move = serverbound.play.PlayerPositionPacket()
+                    move.x, move.y, move.z = x, y, z
+                    move.on_ground = True
+                    connection.write_packet(move)
 
-                print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
-                time.sleep(60)
+                    print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
+                    time.sleep(60)
+
+                except ConnectionResetError:
+                    print("❌ Connection reset by server. Will reconnect...")
+                    should_reconnect = True
+                    break  # خروج من حلقة الحركة لإعادة الاتصال
 
         except Exception as e:
             print("⚠️ Error in bot:", e)
