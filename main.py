@@ -1,9 +1,10 @@
 import os
 import time
 import threading
+import random
 from flask import Flask
 from minecraft.networking.connection import Connection
-from minecraft.networking.packets import clientbound
+from minecraft.networking.packets import serverbound, clientbound
 from minecraft.exceptions import LoginDisconnect
 
 # --- Flask Keep-Alive ---
@@ -11,7 +12,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ MC Bot is running and reconnecting every 30s!"
+    return "✅ MC Bot is running and keeping alive!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -22,16 +23,22 @@ MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
 MC_USERNAME = "MIDOUXBOT"
 
+should_reconnect = False
+
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
 
 def on_disconnect(packet):
-    print(f"❌ Disconnected. Reason: {packet.json_data}")
+    global should_reconnect
+    print(f"❌ Disconnected from server. Reason: {packet.json_data}")
+    should_reconnect = True
 
 def run_mc_bot():
+    global should_reconnect
     while True:
+        should_reconnect = False
         try:
-            print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
+            print(f"🚪 Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
 
             # Events
@@ -41,23 +48,42 @@ def run_mc_bot():
 
             connection.connect()
 
-            # البوت يبقى 30 ثانية فقط ثم يخرج
-            start = time.time()
-            while connection.connected and (time.time() - start < 30):
-                time.sleep(1)
+            # موقع افتراضي للبوت
+            x, y, z = 0.0, 64.0, 0.0
 
-            if connection.connected:
-                print("⏹ Bot disconnecting after 30s...")
-                connection.disconnect()
+            while connection.connected:
+                # حركة صغيرة كل 30 ثانية
+                dx = random.choice([-0.3, 0.3])  # خطوة صغيرة يمين/يسار
+                dz = random.choice([-0.3, 0.3])  # خطوة صغيرة قدام/وراء
+                x += dx
+                z += dz
+
+                move = serverbound.play.PlayerPositionPacket()
+                move.x, move.y, move.z = x, y, z
+                move.on_ground = True
+                connection.write_packet(move)
+
+                print(f"🤖 Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
+                time.sleep(30)  # ينتظر 30 ثانية قبل الحركة التالية
+
+        except (ConnectionResetError, EOFError) as e:
+            print("⚠️ Connection error, retrying in 10s:", e)
+            should_reconnect = True
 
         except LoginDisconnect as e:
             print("❌ Login rejected by server:", e)
+            should_reconnect = False
 
         except Exception as e:
-            print("⚠️ Error:", e)
+            print("⚠️ Unexpected error:", e)
+            should_reconnect = True
 
-        print("🔄 Reconnecting in 30 seconds...")
-        time.sleep(30)
+        if should_reconnect:
+            print("🔄 Reconnecting in 10 seconds...")
+            time.sleep(10)
+        else:
+            print("🛑 Bot stopped (no reconnect).")
+            break
 
 # --- Start Everything in Threads ---
 if __name__ == "__main__":
