@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ MC Bot is running and looping join/leave!"
+    return "✅ MC Bot is running and reconnecting every 30s!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -20,18 +20,18 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUX"  # <-- الاسم
+MC_USERNAME = "MIDOUXBOT"
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
 
 def on_disconnect(packet):
-    print(f"❌ Disconnected from server. Reason: {packet.json_data}")
+    print(f"❌ Disconnected. Reason: {packet.json_data}")
 
 def run_mc_bot():
     while True:
         try:
-            print(f"🚪 Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
+            print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
 
             # Events
@@ -41,23 +41,23 @@ def run_mc_bot():
 
             connection.connect()
 
-            # يبقى 5 ثواني داخل السيرفر
-            time.sleep(5)
+            # البوت يبقى 30 ثانية فقط ثم يخرج
+            start = time.time()
+            while connection.connected and (time.time() - start < 30):
+                time.sleep(1)
 
-            # يخرج بنفسه
-            print("🚪 Leaving server...")
-            connection.disconnect()
-
-            # ينتظر 5 ثواني برا
-            time.sleep(5)
+            if connection.connected:
+                print("⏹ Bot disconnecting after 30s...")
+                connection.disconnect()
 
         except LoginDisconnect as e:
             print("❌ Login rejected by server:", e)
-            time.sleep(5)
 
         except Exception as e:
-            print("⚠️ Unexpected error:", e)
-            time.sleep(5)
+            print("⚠️ Error:", e)
+
+        print("🔄 Reconnecting in 30 seconds...")
+        time.sleep(30)
 
 # --- Start Everything in Threads ---
 if __name__ == "__main__":
@@ -70,4 +70,3 @@ if __name__ == "__main__":
     # Keep main thread alive
     while True:
         time.sleep(60)
-
