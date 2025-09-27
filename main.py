@@ -20,7 +20,7 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXBOT"  # <-- الاسم
+MC_USERNAME = "MIDOUX"  # <-- الاسم
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
@@ -70,3 +70,4 @@ if __name__ == "__main__":
     # Keep main thread alive
     while True:
         time.sleep(60)
+
