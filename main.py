@@ -21,7 +21,7 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXCHEAT_NEW"  # <-- هنا الاسم الجديد
+MC_USERNAME = "MIDOUXBOT"  # <-- هنا الاسم الجديد
 
 should_reconnect = False
 
@@ -94,3 +94,4 @@ if __name__ == "__main__":
     # Keep main thread alive
     while True:
         time.sleep(60)
+
