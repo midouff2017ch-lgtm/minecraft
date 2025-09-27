@@ -32,36 +32,39 @@ def run_mc_bot():
         try:
             connection = Connection(MC_HOST, MC_PORT, username=username)
 
-            # توابع عند النجاح أو الطرد
-            def handle_join_packet(packet):
+            # --- Events ---
+            def handle_join(packet):
                 print(f"[+] {username} joined the server!")
 
             def handle_disconnect(packet):
-                print(f"❌ Disconnected: {packet.json_data}")
+                print(f"❌ {username} disconnected: {packet.json_data}")
 
-            connection.register_packet_listener(handle_join_packet)
+            connection.register_packet_listener(handle_join)
             connection.register_packet_listener(handle_disconnect)
 
-            # الاتصال
+            # --- Connect ---
             connection.connect()
 
-            # خليه 30 ثانية متصل
-            time.sleep(30)
+            # --- Stay connected for 30s ---
+            start_time = time.time()
+            while connection.connected and (time.time() - start_time < 30):
+                time.sleep(1)
 
-            # اغلاق الاتصال بشكل مرتب
-            print(f"🚪 {username} leaving server...")
-            connection.socket.close()
-            connection.running = False
+            # --- Disconnect cleanly ---
+            if connection.connected:
+                print(f"🚪 {username} leaving server...")
+                connection.disconnect()
+                time.sleep(2)  # مهلة بسيطة للتأكد
 
         except LoginDisconnect as e:
             print(f"❌ Login rejected for {username}: {e}")
         except Exception as e:
             print(f"⚠️ Unexpected error for {username}: {e}")
 
-        # استراحة قبل إعادة الدخول بحساب جديد
-        time.sleep(2)
+        # --- Wait a bit before new account ---
+        time.sleep(3)
 
-# --- Start Everything in Threads ---
+# --- Start Everything ---
 if __name__ == "__main__":
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     bot_thread = threading.Thread(target=run_mc_bot, daemon=True)
