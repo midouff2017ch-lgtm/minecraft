@@ -1,10 +1,9 @@
 import os
 import time
 import threading
-import random
 from flask import Flask
 from minecraft.networking.connection import Connection
-from minecraft.networking.packets import serverbound, clientbound
+from minecraft.networking.packets import clientbound
 from minecraft.exceptions import LoginDisconnect
 
 # --- Flask Keep-Alive ---
@@ -12,7 +11,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ MC Bot is running and keeping alive!"
+    return "✅ MC Bot is running and looping join/leave!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -21,24 +20,18 @@ def run_flask():
 # --- Minecraft Bot Setup ---
 MC_HOST = "midou1555.aternos.me"
 MC_PORT = 26755
-MC_USERNAME = "MIDOUXBOT"  # <-- هنا الاسم الجديد
-
-should_reconnect = False
+MC_USERNAME = "MIDOUXBOT"  # <-- الاسم
 
 def on_join(packet):
     print(f"[+] Bot {MC_USERNAME} joined the server!")
 
 def on_disconnect(packet):
-    global should_reconnect
     print(f"❌ Disconnected from server. Reason: {packet.json_data}")
-    should_reconnect = True
 
 def run_mc_bot():
-    global should_reconnect
     while True:
-        should_reconnect = False
         try:
-            print(f"Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
+            print(f"🚪 Connecting to {MC_HOST}:{MC_PORT} as {MC_USERNAME}")
             connection = Connection(MC_HOST, MC_PORT, username=MC_USERNAME)
 
             # Events
@@ -48,40 +41,23 @@ def run_mc_bot():
 
             connection.connect()
 
-            x, y, z = 0.0, 64.0, 0.0
-            while connection.connected:
-                # حركة عشوائية بسيطة كل 60 ثانية
-                dx = random.choice([-0.5, 0.5])
-                dz = random.choice([-0.5, 0.5])
-                x += dx
-                z += dz
+            # يبقى 5 ثواني داخل السيرفر
+            time.sleep(5)
 
-                move = serverbound.play.PlayerPositionPacket()
-                move.x, move.y, move.z = x, y, z
-                move.on_ground = True
-                connection.write_packet(move)
+            # يخرج بنفسه
+            print("🚪 Leaving server...")
+            connection.disconnect()
 
-                print(f"Bot moved to ({x:.1f}, {y:.1f}, {z:.1f})")
-                time.sleep(60)
-
-        except (ConnectionResetError, EOFError) as e:
-            print("⚠️ Connection error, retrying in 10s:", e)
-            should_reconnect = True
+            # ينتظر 5 ثواني برا
+            time.sleep(5)
 
         except LoginDisconnect as e:
             print("❌ Login rejected by server:", e)
-            should_reconnect = False
+            time.sleep(5)
 
         except Exception as e:
             print("⚠️ Unexpected error:", e)
-            should_reconnect = True
-
-        if should_reconnect:
-            print("🔄 Reconnecting in 10 seconds...")
-            time.sleep(10)
-        else:
-            print("🛑 Bot stopped (no reconnect).")
-            break
+            time.sleep(5)
 
 # --- Start Everything in Threads ---
 if __name__ == "__main__":
@@ -94,4 +70,3 @@ if __name__ == "__main__":
     # Keep main thread alive
     while True:
         time.sleep(60)
-
