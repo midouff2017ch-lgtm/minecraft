@@ -28,24 +28,37 @@ def run_mc_bot():
     while True:
         username = generate_username()
         print(f"🚪 Connecting to {MC_HOST}:{MC_PORT} as {username}")
+
         try:
             connection = Connection(MC_HOST, MC_PORT, username=username)
-            connection.connect()
-            print(f"[+] {username} joined the server!")
 
-            # يبقى 30 ثانية داخل السيرفر
+            # توابع عند النجاح أو الطرد
+            def handle_join_packet(packet):
+                print(f"[+] {username} joined the server!")
+
+            def handle_disconnect(packet):
+                print(f"❌ Disconnected: {packet.json_data}")
+
+            connection.register_packet_listener(handle_join_packet)
+            connection.register_packet_listener(handle_disconnect)
+
+            # الاتصال
+            connection.connect()
+
+            # خليه 30 ثانية متصل
             time.sleep(30)
 
-            # قطع الاتصال بشكل يدوي
-            connection.disconnect()
-            print(f"🚪 {username} left the server.")
+            # اغلاق الاتصال بشكل مرتب
+            print(f"🚪 {username} leaving server...")
+            connection.socket.close()
+            connection.running = False
 
         except LoginDisconnect as e:
             print(f"❌ Login rejected for {username}: {e}")
         except Exception as e:
             print(f"⚠️ Unexpected error for {username}: {e}")
 
-        # انتظار بسيط قبل ما يولد حساب جديد ويرجع يدخل
+        # استراحة قبل إعادة الدخول بحساب جديد
         time.sleep(2)
 
 # --- Start Everything in Threads ---
